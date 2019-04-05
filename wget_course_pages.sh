@@ -10,6 +10,6 @@ while read code; do
     if [[ -f "./html/$code.html" ]]; then 
         echo "$code already downloaded."
     else 
-        wget 'https://my.uq.edu.au/programs-courses/course.html?course_code='"$code" -O "./html/$code".html
+        wget 'https://my.uq.edu.au/programs-courses/course.html?course_code='"$code" -O "./html/$code".html &
     fi
 done < "$course_codes"
