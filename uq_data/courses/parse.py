@@ -5,6 +5,56 @@ import bs4
 import os
 import json
 
+from collections import namedtuple
+
+import logging
+
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+CourseData = namedtuple('CourseData', 'data file')
+
+logger = logging.getLogger(__name__)
+
+Base = declarative_base()
+
+class Course(Base):
+    __tablename__ = 'courses'
+    course_code = Column(String(16), primary_key=True, unique=True, index=True)
+
+    course_name = Column(String)
+    level = Column(String)
+    faculty = Column(String)
+    school = Column(String)
+    units = Column(String)
+    duration = Column(String)
+    contact = Column(String)
+    restricted = Column(String)
+    incompatible = Column(String)
+    prerequisites = Column(String)
+    assessment_methods = Column(String)
+    coordinator = Column(String)
+    study_abroad = Column(String)
+    description = Column(String)
+
+    last_updated = Column(String)
+
+    offerings = relationship('Offering', back_populates='course')
+
+class Offering(Base):
+    __tablename__ = 'offerings'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    course_code = Column(String(16), ForeignKey('courses.course_code'))
+    code = Column(String)
+    year = Column(Integer)
+    teaching_period = Column(String, nullable=True)
+
+    course = relationship('Course', back_populates='offerings')
+
+
+_local_tz = dt.datetime.now(dt.timezone.utc).astimezone().tzinfo
 
 _id_mapping = {
     'course-level': 'level',
@@ -21,7 +71,6 @@ _id_mapping = {
     'course-studyabroard': 'study_abroad',
     'course-summary': 'description',
 }
-
 
 def parse_course_html(html_file: T.IO[T.Any], updated_time: dt.datetime=None) -> T.Dict:
     soup = bs4.BeautifulSoup(html_file.read(), features='lxml')
@@ -67,10 +116,8 @@ def parse_course_html(html_file: T.IO[T.Any], updated_time: dt.datetime=None) ->
 
     return data
 
-def parse_all_courses_from_html(output_folder: str, html_folder: str):
-    # https://stackoverflow.com/a/39079819
-    local_tz = dt.datetime.now(dt.timezone.utc).astimezone().tzinfo
 
+def parse_all_courses_from_html(html_folder: str):
 
     for html_path in os.listdir(html_folder):
         html_path_full = os.path.join(html_folder, html_path)
@@ -78,34 +125,62 @@ def parse_all_courses_from_html(output_folder: str, html_folder: str):
         if not (os.path.isfile(html_path_full) and html_path.lower().endswith('.html')):
             continue 
         
-        out_path_full = os.path.join(output_folder, html_path.upper().replace('.HTML', '.json'))
-        
         modified = dt.datetime.fromtimestamp(os.path.getmtime(html_path_full))
-        modified = modified.replace(tzinfo=local_tz)
+        modified = modified.replace(tzinfo=_local_tz)
+        
+        with open(html_path_full) as html_file:
+            parsed_data = parse_course_html(html_file, modified)
+
+        yield CourseData(parsed_data, html_path)
+
+def parse_and_write_sqlite(html_folder):
+    engine = create_engine('sqlite:///data/course_data.sqlite')
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    s = Session()
+
+    for data, path in parse_all_courses_from_html(html_folder):
+        print(path)
+        d = {k: v for k, v in data.items() if k != 'semesters'}
+        q = s.query(Course).get(d['course_code'])
+        if q:
+            if q.last_updated < d['last_updated']:
+                print('time to update') 
+            else:
+                print('not updating')
+        else:
+            s.add(Course(**d))
+
+    s.commit()
+
+def parse_and_write_json(output_folder: str, html_folder: str):
+    # https://stackoverflow.com/a/39079819
+
+    for data, path in parse_all_courses_from_html(html_folder):
+        out_path_full = os.path.join(output_folder, path.upper().replace('.HTML', '.json'))
+        modified = dt.datetime.fromisoformat(data['last_updated'])
 
         try:
             with open(out_path_full) as out_file:
                 last_modified = dt.datetime.fromisoformat(json.load(out_file)['last_updated'])
         except OSError:
-            last_modified = dt.datetime.min.replace(tzinfo=local_tz)
+            last_modified = dt.datetime.min.replace(tzinfo=_local_tz)
 
         print('json', last_modified,   'HTML', modified )
 
         if last_modified > modified:
-            print(f'{html_path}\'s JSON file is newer than the HTML file!')
+            print(f'{path}\'s JSON file is newer than the HTML file!')
             continue
         elif last_modified == modified:
-            print(f'{html_path}\'s JSON file matches the HTML file.')
+            print(f'{path}\'s JSON file matches the HTML file.')
             continue
         else:
-            print(f'{html_path}\'s JSON file is older than the HTML, parsing...')
-        
-        with open(html_path_full) as html_file:
-            parsed_data = parse_course_html(html_file, modified)
+            print(f'{path}\'s JSON file is older than the HTML, parsing...')
 
         with open(out_path_full, 'w') as out_file:
-            json.dump(parsed_data, out_file)
-
+            json.dump(data, out_file)
 
 if __name__ == "__main__":
-    parse_all_courses_from_html('./course', './html')
+    # parse_and_write_json('./course', './html')
+    parse_and_write_sqlite('./html')
