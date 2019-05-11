@@ -16,3 +16,7 @@ if __name__ == "__main__":
         json.dump(courses, j)
     with open('data/course_codes.txt', 'w', newline='\n') as f:
         f.write('\n'.join(courses))
+    url = 'https://my.uq.edu.au/programs-courses/course.html?course_code='
+    with open('data/_aria_list.txt', 'w', newline='\n') as f:
+        for c in courses:
+            f.write(url + c + '\n out=' + c + '.html\n' )
