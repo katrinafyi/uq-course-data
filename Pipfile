@@ -10,6 +10,9 @@ pylint = "*"
 sqlalchemy = "*"
 beautifulsoup4 = "*"
 lxml = "*"
+parsimonious = "*"
+parglare = "*"
+scrapy = "*"
 
 [requires]
 python_version = "3.7"

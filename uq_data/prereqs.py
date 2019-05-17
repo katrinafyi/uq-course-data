@@ -61,7 +61,7 @@ _grammar = Grammar('''
     parens = '(' expr ')'
     
     basic_comma_list = course!(and/or) more_commas
-    more_commas = (',' space course more_commas) / ''
+    more_commas = (comma space course more_commas) / (or course) / ''
     comma = "," / ";"
 
     basic_and_list = course!or more_ands
@@ -70,7 +70,7 @@ _grammar = Grammar('''
 
     basic_or_list = course more_ors
     more_ors = (or course more_ors) / '' 
-    or = space ("or" / "|") space
+    or = space ("or" / "|" / "OR") space
 
     course = code / parens
     code = ~r"[A-Z]{3,5}[0-9]{3,4}[A-Z]?"
@@ -98,7 +98,8 @@ if __name__ == "__main__":
                 print(e)
             else:
                 # print(failures, 'failed.')
-                print(result)
+                # print(result)
+                pass
             print()
             if total == 2:
                 pass

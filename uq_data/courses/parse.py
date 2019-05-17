@@ -182,5 +182,5 @@ def parse_and_write_json(output_folder: str, html_folder: str):
             json.dump(data, out_file)
 
 if __name__ == "__main__":
-    # parse_and_write_json('./course', './html')
-    parse_and_write_sqlite('./html')
+    parse_and_write_json('./course', './html')
+    # parse_and_write_sqlite('./html')

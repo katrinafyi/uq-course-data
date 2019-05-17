@@ -6,7 +6,9 @@ wget_list='./_wget_list.txt'
 
 mkdir -p html
 
-aria2c --continue true --conditional-get true -j3 -x10 --auto-file-renaming=false --dir=./html -i ./data/_aria_list.txt
+# 
+
+aria2c -c -j3 -x10 --auto-file-renaming=false  --dir=./html -i ./data/_aria_list.txt
 
 s=''
 # rm -f "$wget_list"
@@ -18,4 +20,4 @@ s=''
 
 
 
-# wget -E -H -e robots=off -P ./html/ -i ./_wget_list.txt
+# wget -E -H -e robots=off -P ./html/ -i ./data/_url_list.txt

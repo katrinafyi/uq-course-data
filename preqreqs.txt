@@ -4,6 +4,7 @@ Approval of course coordinator for ethical clearance
 Approval of Course Coordinator for Ethical Clearance
 ABTS1000, ABTS2020, or #6 of ABTS-coded courses
 MATH1901D
+a
 ACCT1901D
 ACCT1101
 ACCT1110 or 2101 or 2111
@@ -74,7 +75,7 @@ ABUS1001 or MGTS1960
 A minimum of 32 units completed from previous agriculture / agribusiness / science courses
 BIOL1020, BIOL1030, BIOL1040
 STAT1201 or equivalent
-STAT1201 or STAT2701, AGRC3032, STAT3702
+STAT1201, STAT2701, AGRC3032 or STAT3702
 STAT1201 or STAT2701, AGRC3032, STAT3702
 STAT1201 or STAT2701, AGRC3032, STAT3702
 STAT1201 or STAT2701, AGRC3032, STAT3702
