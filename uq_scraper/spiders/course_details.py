@@ -2,22 +2,28 @@
 import scrapy
 import json 
 import datetime
-
-BASE = 'https://my.uq.edu.au'
+import random
 
 seen = set()
-with open('./data/course_details.json') as f:
-    for l in f:
-        if l.startswith('{"code": "'):
-            l = l[:30]
-            l = l.replace('{"code": "', '', 1)
-            code, _ = l.split('"', 1)
-            seen.add(code)
+try:
+    with open('./data/course_details.json') as f:
+        for l in f:
+            if l.startswith('{"code": "'):
+                l = l[:30]
+                l = l.replace('{"code": "', '', 1)
+                code, _ = l.split('"', 1)
+                seen.add(code)
+except FileNotFoundError: pass
 print(len(seen), 'items already done.')
 print()
 
-with open('./data/courses.json') as f:
-    course_urls = [BASE+x['href'] for x in json.load(f) if x['code'] not in seen]
+course_urls = []
+try:
+    with open('./data/courses.json') as f:
+        course_urls = [x['href'] for x in json.load(f) if x['code'] not in seen]
+except FileNotFoundError: pass
+
+# course_urls = random.sample(course_urls, min(400, len(course_urls)))
 
 class CourseDetailsSpider(scrapy.Spider):
     name = 'course_details'
@@ -25,9 +31,19 @@ class CourseDetailsSpider(scrapy.Spider):
     start_urls = course_urls
 
     custom_settings = {
-        'CONCURRENT_REQUESTS': 3,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 3,
+        'LOG_LEVEL': 'INFO',
+
+        'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
+        'COOKIES_ENABLED': False,
+        
+        'CONCURRENT_REQUESTS': 10,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 5,
+        'DOWNLOAD_DELAY': 0.5,
         'RETRY_TIMES': 10,
+
+        'AUTOTHROTTLE_ENABLED': True,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 4,
+        'AUTOTHROTTLE_DEBUG': True
     }
 
     _fields = {
@@ -54,7 +70,7 @@ class CourseDetailsSpider(scrapy.Spider):
             '_updated': datetime.datetime.utcnow().isoformat()
         }
 
-        desc = '\n'.join(response.css('#course-summary ::text').getall()).strip()
+        desc = ' '.join(response.css('#course-summary ::text').getall()).strip()
         out['description'] = desc
 
         left = response.css('#summary-content')
@@ -67,27 +83,33 @@ class CourseDetailsSpider(scrapy.Spider):
             
         
         out['offerings'] = offers = []
-        for tr in response.css('.offerings > tbody > tr'):
-            fields = tr.css('td')
-            sem = fields[0].css('a::text').get().strip()
+        for table, archived in (('#course-current-offerings', False), 
+                ('#course-archived-offerings', True)):
+            for tr in response.css(f'{table} > tbody > tr'):
+                fields = tr.css('td')
+                sem = fields[0].css('a::text').get().strip()
 
-            if ' (' in sem:
-                sem_and_year, tp = sem.split(' (', 1)
-                tp = tp[:-1]
-            else:
-                sem_and_year = sem
-                tp = None
-            sem, year = sem_and_year.split(', ', 1)
-            
-            ecp = fields[3].css('a::attr(href)').get()
-            offers.append({
-                'code': None if not ecp else ecp.split('=')[-1],
-                'semester': sem,
-                'year': int(year),
-                'teaching_period': tp,
-                'location': fields[1].css('*::text').get(),
-                'mode': fields[2].css('*::text').get(),
-                'ecp': ecp
-            })
+                if ' (' in sem:
+                    sem_and_year, tp = sem.split(' (', 1)
+                    tp = tp[:-1]
+                else:
+                    sem_and_year = sem
+                    tp = None
+                sem, year = sem_and_year.split(', ', 1)
+                
+                link = fields[0].css('a::attr(href)').get()
+                ecp = fields[3].css('a::attr(href)').get()
+                offers.append({
+                    'offer_code': link.split('offer=', 1)[1].split('&', 1)[0],
+                    'link': response.urljoin(link),
+                    'semester': sem,
+                    'year': int(year),
+                    'teaching_period': tp,
+                    'archived': archived,
+                    'location': fields[1].css('*::text').get(),
+                    'mode': fields[2].css('*::text').get(),
+                    'profile_id': None if not ecp else ecp.split('=')[-1],
+                    'ecp': ecp
+                })
 
         yield out
