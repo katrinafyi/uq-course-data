@@ -1,5 +1,8 @@
+.vscode/settings.json
+
 html/
 course/
+course_details.json
 
 
 # Created by https://www.gitignore.io/api/python,visualstudiocode
@@ -142,3 +145,4 @@ dmypy.json
 .history
 
 # End of https://www.gitignore.io/api/python,visualstudiocode
+
