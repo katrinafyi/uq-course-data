@@ -8,4 +8,5 @@ and programs. Planned features:
  - Course, program and major requirements represented as a graph
  - Verification of above requirements
 
-`uq_scraper` is a scraper for UQ course data, written using scrapy. 
+`uq_scraper` is a scraper for UQ course data, written using scrapy. Scraped 
+data is stored as JSON files in `data`.
