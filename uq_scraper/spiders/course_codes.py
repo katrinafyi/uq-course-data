@@ -12,5 +12,6 @@ class CourseCodesSpider(scrapy.Spider):
             yield {
                 'code': li.css('.code::text').get(),
                 'name': li.css('.title::text').get(),
-                'href': li.css('a[href^="/programs-courses/"]::attr(href)').get()
+                'href': response.urljoin(
+                    li.css('a[href^="/programs-courses/"]::attr(href)').get().split('&offer=', 1)[0])
             }
