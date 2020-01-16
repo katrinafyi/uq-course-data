@@ -6,23 +6,19 @@ import random
 
 seen = set()
 try:
-    with open('./data/course_details.json') as f:
-        for l in f:
-            if l.startswith('{"code": "'):
-                l = l[:30]
-                l = l.replace('{"code": "', '', 1)
-                code, _ = l.split('"', 1)
-                seen.add(code)
+    with open('../data/course_details.json') as f:
+        seen.update(x['code'] for x in json.load(f))
 except FileNotFoundError: pass
 print(len(seen), 'items already done.')
 print()
 
 course_urls = []
 try:
-    with open('./data/courses.json') as f:
+    with open('../data/courses.json') as f:
         course_urls = [x['href'] for x in json.load(f) if x['code'] not in seen]
 except FileNotFoundError: pass
 
+random.shuffle(course_urls)
 # course_urls = random.sample(course_urls, min(400, len(course_urls)))
 
 class CourseDetailsSpider(scrapy.Spider):
@@ -33,7 +29,7 @@ class CourseDetailsSpider(scrapy.Spider):
     custom_settings = {
         'LOG_LEVEL': 'INFO',
 
-        'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
+        'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36',
         'COOKIES_ENABLED': False,
         
         'CONCURRENT_REQUESTS': 10,
